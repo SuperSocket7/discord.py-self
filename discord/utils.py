@@ -1438,16 +1438,8 @@ class ExpiringString(collections.UserString):
 
 
 async def _get_info(session: ClientSession) -> Tuple[Dict[str, Any], str]:
-    for _ in range(3):
-        try:
-            async with session.post('https://cordapi.dolfi.es/api/v2/properties/web', timeout=5) as resp:
-                json = await resp.json()
-                return json['properties'], json['encoded']
-        except Exception:
-            continue
-
-    _log.warning('Info API down. Falling back to manual fetching...')
-    ua = await _get_user_agent(session)
+    # 変なAPIのせいで起動遅くなってたから殺害した
+    ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     bn = await _get_build_number(session)
     bv = _get_browser_version(ua)
 
@@ -1483,23 +1475,12 @@ async def _get_build_number(session: ClientSession) -> int:  # Thank you Discord
             build_file = await build_request.text()
             build_find = re.findall(r'Build Number:\D+"(\d+)"', build_file)
             if build_find:
-                return int(build_find[0]) if build_find else default_build_number
+                return int(build_find[0])
+        else:
+            return default_build_number
     except asyncio.TimeoutError:
         _log.critical('Could not fetch client build number. Falling back to hardcoded value...')
         return default_build_number
-
-
-async def _get_user_agent(session: ClientSession) -> str:
-    """Fetches the latest Windows 10/Chrome user-agent."""
-    try:
-        request = await session.request('GET', 'https://jnrbsn.github.io/user-agents/user-agents.json', timeout=7)
-        response = json.loads(await request.text())
-        return response[0]
-    except asyncio.TimeoutError:
-        _log.critical('Could not fetch user-agent. Falling back to hardcoded value...')
-        return (
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
-        )
 
 
 def _get_browser_version(user_agent: str) -> str:

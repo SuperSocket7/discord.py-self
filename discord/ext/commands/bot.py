@@ -185,12 +185,7 @@ class BotBase(GroupMixin[None]):
         if self_bot and user_bot:
             raise TypeError('Both self_bot and user_bot are set')
 
-        if self_bot:
-            self._skip_check = lambda x, y: x != y
-        elif user_bot:
-            self._skip_check = lambda *_: False
-        else:
-            self._skip_check = lambda x, y: x == y
+        self._skip_check = lambda *_: False
 
         if help_command is _default:
             self.help_command = DefaultHelpCommand()
@@ -1203,8 +1198,6 @@ class BotBase(GroupMixin[None]):
         message: :class:`discord.Message`
             The message to process commands for.
         """
-        if message.author.bot:
-            return
 
         ctx = await self.get_context(message)
         # the type of the invocation context's bot attribute will be correct

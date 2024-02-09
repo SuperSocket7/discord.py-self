@@ -420,6 +420,42 @@ class UserCommand(BaseCommand):
         }
         return await super().__call__(data, None, channel)
 
+    async def call(self, user: Optional[Snowflake] = None, *, channel: Optional[Messageable] = None):
+        """|coro|
+
+        Use the user command.
+
+        Parameters
+        ----------
+        user: Optional[:class:`User`]
+            The user to use the command on. Overrides :attr:`target_user`.
+            Required if :attr:`target_user` is not set.
+        channel: Optional[:class:`abc.Messageable`]
+            The channel to use the command on. Overrides :attr:`target_channel`.
+            Required if :attr:`target_channel` is not set.
+
+        Returns
+        -------
+        :class:`Interaction`
+            The interaction that was created.
+        """
+        user = user or self._user
+        if user is None:
+            raise TypeError('__call__() missing 1 required positional argument: \'user\'')
+
+        command = self._data
+        data: UserCommandInteractionData = {
+            'application_command': command,
+            'attachments': [],
+            'id': str(self.id),
+            'name': self.name,
+            'options': [],
+            'target_id': str(user.id),
+            'type': ApplicationCommandType.user.value,
+            'version': str(self.version),
+        }
+        return await super().__call__(data, None, channel)
+
     @property
     def type(self) -> Literal[ApplicationCommandType.user]:
         """:class:`ApplicationCommandType`: The type of application command. This is always :attr:`ApplicationCommandType.user`."""
@@ -500,6 +536,42 @@ class MessageCommand(BaseCommand):
         self._message = target
 
     async def __call__(self, message: Optional[Message] = None, *, channel: Optional[Messageable] = None):
+        """|coro|
+
+        Use the message command.
+
+        Parameters
+        ----------
+        message: Optional[:class:`Message`]
+            The message to use the command on. Overrides :attr:`target_message`.
+            Required if :attr:`target_message` is not set.
+        channel: Optional[:class:`abc.Messageable`]
+            The channel to use the command on. Overrides :attr:`target_channel`.
+            Required if :attr:`target_channel` is not set.
+
+        Returns
+        -------
+        :class:`Interaction`
+            The interaction that was created.
+        """
+        message = message or self._message
+        if message is None:
+            raise TypeError('__call__() missing 1 required positional argument: \'message\'')
+
+        command = self._data
+        data: MessageCommandInteractionData = {
+            'application_command': command,
+            'attachments': [],
+            'id': str(self.id),
+            'name': self.name,
+            'options': [],
+            'target_id': str(message.id),
+            'type': self.type.value,
+            'version': str(self.version),
+        }
+        return await super().__call__(data, None, channel)
+
+    async def call(self, message: Optional[Message] = None, *, channel: Optional[Messageable] = None):
         """|coro|
 
         Use the message command.
@@ -620,6 +692,35 @@ class SlashCommand(BaseCommand, SlashMixin):
         self._unwrap_options(data.get('options', []))
 
     async def __call__(self, channel: Optional[Messageable] = None, /, **kwargs):
+        r"""|coro|
+
+        Use the slash command.
+
+        Parameters
+        ----------
+        channel: Optional[:class:`abc.Messageable`]
+            The channel to use the command on. Overrides :attr:`target_channel`.
+            Required if :attr:`target_channel` is not set.
+        \*\*kwargs: Any
+            The options to use. These will be casted to the correct type.
+            If an option has choices, they are automatically converted from name to value for you.
+
+        Raises
+        ------
+        TypeError
+            Attempted to use a group.
+
+        Returns
+        -------
+        :class:`Interaction`
+            The interaction that was created.
+        """
+        if self.is_group():
+            raise TypeError('Cannot use a group')
+
+        return await super().__call__(*self._parse_kwargs(kwargs), channel)
+
+    async def call(self, channel: Optional[Messageable] = None, /, **kwargs):
         r"""|coro|
 
         Use the slash command.
