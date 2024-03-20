@@ -1828,6 +1828,8 @@ class Messageable:
         """
 
         channel = await self._get_channel()
+        # 送信前の既読位置を取得
+        ack_message = await channel.fetch_message(channel.acked_message_id)
         state = self._state
         content = str(content) if content is not None else None
         previous_allowed_mention = state.allowed_mentions
@@ -1873,6 +1875,8 @@ class Messageable:
             data = await state.http.send_message(channel.id, params=params)
 
         ret = state.create_message(channel=channel, data=data)
+        # 既読を送信前の状態に書き換える
+        await ack_message.ack()
 
         if delete_after is not None:
             await ret.delete(delay=delete_after)
